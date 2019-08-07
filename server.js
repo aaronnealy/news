@@ -4,25 +4,32 @@ var axios = require("axios");
 var cheerio = require("cheerio");
 var mongoose = require("mongoose");
 var logger = require("morgan");
+require('dotenv').config
 
 //Require all models
 var db = require("./models");
 
-//Change to heroku port later !!!!!!1
-var PORT = 4000; 
+
+var PORT = process.env.PORT || 4000; 
 
 var app = express();
+
 
 app.use(logger("dev"));
 // Parse request body as JSON
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // Make public a static folder
+
+if(process.env.NODE_ENV === "production"){
+  app.use(express.static("client/build"));
+}
 app.use(express.static("public"));
 
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/unit18Populater", { useNewUrlParser: true });
+let = MONGODB_URI = process.env.MONGODB_URI||"mongodb://localhost/unit18Populater"
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
 //Routes
 
