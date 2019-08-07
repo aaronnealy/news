@@ -3,7 +3,7 @@ var express = require("express");
 var axios = require("axios");
 var cheerio = require("cheerio");
 var mongoose = require("mongoose");
-var exphbs = require("express-handlebars");
+var logger = require("morgan");
 
 //Require all models
 var db = require("./models");
@@ -13,8 +13,13 @@ var PORT = 4000;
 
 var app = express();
 
-app.engine("handlebars", exphbs({ defaultLayout: "main" }));
-app.set("view engine", "handlebars");
+app.use(logger("dev"));
+// Parse request body as JSON
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+// Make public a static folder
+app.use(express.static("public"));
+
 
 // Connect to the Mongo DB
 mongoose.connect("mongodb://localhost/unit18Populater", { useNewUrlParser: true });
@@ -23,12 +28,12 @@ mongoose.connect("mongodb://localhost/unit18Populater", { useNewUrlParser: true 
 
 app.get("/scrape", function(req, res) {
     // First, we grab the body of the html with axios
-    axios.get("http://www.echojs.com/").then(function(response) {
+    axios.get("https://news.ycombinator.com/").then(function(response) {
       // Then, we load that into cheerio and save it to $ for a shorthand selector
       var $ = cheerio.load(response.data);
   
       // Now, we grab every h2 within an article tag, and do the following:
-      $("article h2").each(function(i, element) {
+      $(".title").each(function(i, element) {
         // Save an empty result object
         var result = {};
   
@@ -64,13 +69,29 @@ app.get("/scrape", function(req, res) {
       .then(function(dbArticle) {
         // If we were able to successfully find Articles, send them back to the client
         res.json(dbArticle);
+        
       })
+      
       .catch(function(err) {
         // If an error occurred, send it to the client
         res.json(err);
-      });
+      })
+        
+  });
 
-      res.render("index", {dbArticle})
+  app.get("/articles/:id", function(req, res) {
+
+    db.Article.findOne({ _id: req.params.id })
+     
+      .populate("note")
+      .then(function(dbArticle) {
+  
+        res.json(dbArticle);
+      })
+      .catch(function(err) {
+
+        res.json(err);
+      });
   });
 
   app.listen(PORT, function() {
